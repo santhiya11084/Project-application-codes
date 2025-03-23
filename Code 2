@@ -1,0 +1,19 @@
+<?php
+// Database configuration
+$host = 'localhost'; // Database host
+$dbname = 'tamillearningapp'; // Database name
+$username = 'root'; // Database username
+$password = '';
+
+// Create a new MySQLi connection
+$mysqli = new mysqli($host, $username, $password, $dbname);
+
+// Check connection
+if ($mysqli->connect_error) {
+    die(json_encode([
+        "status" => false,
+        "message" => "Database connection failed: " . $mysqli->connect_error,
+        "data" => []
+    ]));
+}
+?>
