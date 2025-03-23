@@ -1,0 +1,93 @@
+<?php
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $mobile = $_POST['mobile']; // Updated field name to match 'Mobile'
+    $new_password = $_POST['new_password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    // Check if all fields are provided
+    if (empty($mobile) || empty($new_password) || empty($confirm_password)) {
+        echo json_encode([
+            "status" => false,
+            "message" => "All fields are required.",
+            "data" => []
+        ]);
+        exit;
+    }
+
+    // Check if passwords match
+    if ($new_password !== $confirm_password) {
+        echo json_encode([
+            "status" => false,
+            "message" => "Passwords do not match.",
+            "data" => []
+        ]);
+        exit;
+    }
+
+    // Include database configuration
+    require 'dbconfig.php';
+
+    // Prepare SQL to check if the mobile number exists
+    $stmt = $mysqli->prepare("SELECT Id FROM signup WHERE Mobile = ?");
+    if (!$stmt) {
+        echo json_encode([
+            "status" => false,
+            "message" => "Failed to prepare SQL statement: " . $mysqli->error,
+            "data" => []
+        ]);
+        exit;
+    }
+
+    // Bind and execute
+    $stmt->bind_param("s", $mobile);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        // Mobile number exists, prepare SQL to update the password
+        $update_stmt = $mysqli->prepare("UPDATE signup SET Password = ? WHERE Mobile = ?");
+        if (!$update_stmt) {
+            echo json_encode([
+                "status" => false,
+                "message" => "Failed to prepare update statement: " . $mysqli->error,
+                "data" => []
+            ]);
+            exit;
+        }
+
+        // Bind and execute the update statement
+        $update_stmt->bind_param("ss", $new_password, $mobile);
+        if ($update_stmt->execute()) {
+            echo json_encode([
+                "status" => true,
+                "message" => "Password updated successfully.",
+                "data" => []
+            ]);
+        } else {
+            echo json_encode([
+                "status" => false,
+                "message" => "Failed to update password.",
+                "data" => []
+            ]);
+        }
+
+        $update_stmt->close();
+    } else {
+        echo json_encode([
+            "status" => false,
+            "message" => "Mobile number not found.",
+            "data" => []
+        ]);
+    }
+
+    // Close the statement and connection
+    $stmt->close();
+    $mysqli->close();
+} else {
+    echo json_encode([
+        "status" => false,
+        "message" => "Invalid request method. Please use POST.",
+        "data" => []
+    ]);
+}
+?>
