@@ -1,0 +1,66 @@
+<?php
+// Allow cross-origin requests (for development; restrict for production)
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+
+// Include database configuration
+include_once 'DBconfig.php';
+
+// Check request method
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Get form-data input
+    $input = $_POST;
+
+    if (!empty($input['Username']) && !empty($input['Mobile']) && !empty($input['password'])) {
+        $username = $mysqli->real_escape_string(trim($input['Username']));
+        $mobile = $mysqli->real_escape_string(trim($input['Mobile']));
+        $password = trim($input['password']); // No encryption, use the password directly
+
+        // Check if the mobile number already exists
+        $checkQuery = "SELECT * FROM Signup WHERE Mobile = '$mobile'";
+        $checkResult = $mysqli->query($checkQuery);
+
+        if ($checkResult && $checkResult->num_rows > 0) {
+            echo json_encode([
+                "status" => false,
+                "message" => "Mobile number already registered",
+                "data" => []
+            ]);
+        } else {
+            // Insert new user (plaintext password)
+            $insertQuery = "INSERT INTO Signup (Username, Mobile, password) VALUES ('$username', '$mobile', '$password')";
+            if ($mysqli->query($insertQuery)) {
+                echo json_encode([
+                    "status" => true,
+                    "message" => "Registration successful",
+                    "data" => [
+                        "Username" => $username,
+                        "Mobile" => $mobile
+                    ]
+                ]);
+            } else {
+                echo json_encode([
+                    "status" => false,
+                    "message" => "Failed to register user: " . $mysqli->error,
+                    "data" => []
+                ]);
+            }
+        }
+    } else {
+        echo json_encode([
+            "status" => false,
+            "message" => "All fields (Username, Mobile, password) are required",
+            "data" => []
+        ]);
+    }
+} else {
+    echo json_encode([
+        "status" => false,
+        "message" => "Invalid request method",
+        "data" => []
+    ]);
+}
+
+// Close the database connection
+$mysqli->close();
+?>
